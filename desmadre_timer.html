@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Desmadre Timer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #F5A800;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 40px;
+  font-family: Arial Black, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* LOGO */
+.logo-row {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  font-size: clamp(46px, 13vw, 74px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  margin-bottom: 2px;
+}
+.l-des { color: #2e2e2e; }
+.l-teal { color: #4db8b0; }
+.l-r { color: #4db8b0; display: inline-block; transform: scaleX(-1); }
+.scribble {
+  position: absolute;
+  top: -10px; left: -6px;
+  width: 52%; height: 120%;
+  pointer-events: none;
+  z-index: 2;
+}
+.subtitle {
+  font-family: Arial, sans-serif;
+  font-size: clamp(11px, 3.2vw, 15px);
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+/* RELOJ */
+.hg-wrap {
+  width: min(160px, 44vw);
+  height: min(220px, 60vw);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.hg-wrap svg { width: 100%; height: 100%; }
+
+/* TIEMPO */
+.time-display {
+  font-size: clamp(60px, 17vw, 82px);
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: -2px;
+  margin-bottom: 6px;
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+}
+.time-label {
+  font-family: Arial, sans-serif;
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.88);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 22px;
+  min-height: 17px;
+}
+
+/* BOTONES */
+.btn-group { display: flex; gap: clamp(8px,3vw,14px); margin-bottom: 18px; flex-wrap: wrap; justify-content: center; }
+.btn-time {
+  background: #fff;
+  color: #F5A800;
+  border: none;
+  border-radius: 50px;
+  font-size: clamp(18px, 5.5vw, 23px);
+  font-weight: 900;
+  font-family: Arial Black, Arial, sans-serif;
+  padding: clamp(10px,3vw,14px) clamp(20px,6vw,30px);
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.14);
+  min-width: 82px;
+  touch-action: manipulation;
+  transition: transform .1s;
+}
+.btn-time:active { transform: scale(.93); box-shadow: none; }
+.btn-time.active { background: #E8707A; color: #fff; }
+
+.controls { display: flex; gap: clamp(10px,3vw,16px); margin-bottom: 22px; flex-wrap: wrap; justify-content: center; }
+.btn-ctrl {
+  border: none;
+  border-radius: 50px;
+  font-size: clamp(16px, 5vw, 21px);
+  font-weight: 900;
+  font-family: Arial Black, Arial, sans-serif;
+  padding: clamp(12px,3.5vw,16px) clamp(24px,7vw,36px);
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  touch-action: manipulation;
+  transition: transform .1s;
+}
+.btn-start { background: #4db8b0; color: #fff; }
+.btn-reset  { background: #fff;    color: #888; }
+.btn-ctrl:active { transform: scale(.93); box-shadow: none; }
+
+/* MENSAJE FINAL */
+.finish-msg {
+  background: #E8707A;
+  color: #fff;
+  border-radius: 22px;
+  padding: clamp(14px,4vw,20px) clamp(18px,5vw,26px);
+  font-family: Arial, sans-serif;
+  font-size: clamp(15px, 4.2vw, 18px);
+  font-weight: 900;
+  text-align: center;
+  max-width: min(320px, 92vw);
+  line-height: 1.4;
+  display: none;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.13);
+  margin-bottom: 10px;
+}
+.finish-msg.show {
+  display: block;
+  animation: pop .45s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes pop { from{transform:scale(.4);opacity:0} to{transform:scale(1);opacity:1} }
+
+.sound-note {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,.75);
+  text-align: center;
+  min-height: 16px;
+  margin-top: 4px;
+}
+
+/* ANIMACIONES */
+.shake { animation: shake .65s ease-in-out; }
+@keyframes shake {
+  0%,100%{transform:rotate(0)}
+  20%{transform:rotate(-9deg)}
+  40%{transform:rotate(9deg)}
+  60%{transform:rotate(-5deg)}
+  80%{transform:rotate(5deg)}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGO -->
+<div class="logo-row">
+  <span class="l-des">DES</span><span class="l-teal">MA</span><span class="l-teal">D</span><span class="l-r">R</span><span class="l-teal">E</span>
+  <svg class="scribble" viewBox="0 0 120 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5,64 C10,16 22,6 36,13 C50,20 44,54 58,38 C68,26 60,7 76,10 C88,13 82,50 97,34 C106,22 102,5 118,11" stroke="#E8707A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3,46 C18,70 30,74 44,62 C56,50 52,28 68,26 C80,24 76,60 90,52 C100,46 98,16 115,20" stroke="#E8707A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+    <path d="M14,30 C22,14 34,8 46,18 C54,26 50,46 62,38" stroke="#E8707A" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+  </svg>
+</div>
+<div class="subtitle">Hasta aquí hemos llegado</div>
+
+<!-- RELOJ DE ARENA -->
+<div class="hg-wrap">
+  <svg id="hglass" viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <clipPath id="tc"><rect id="tr" x="30" y="18" width="100" height="80"/></clipPath>
+      <clipPath id="bc"><rect id="br" x="30" y="118" width="100" height="80"/></clipPath>
+    </defs>
+    <!-- Estructura -->
+    <rect x="20" y="10"  width="120" height="16" rx="8" fill="#4db8b0" stroke="#1a1a1a" stroke-width="2.5"/>
+    <rect x="20" y="194" width="120" height="16" rx="8" fill="#4db8b0" stroke="#1a1a1a" stroke-width="2.5"/>
+    <rect x="22" y="26"  width="14"  height="168" rx="6" fill="#4db8b0" stroke="#1a1a1a" stroke-width="2"/>
+    <rect x="124" y="26" width="14"  height="168" rx="6" fill="#4db8b0" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- Conectores rosa -->
+    <rect x="18"  y="102" width="38" height="16" rx="6" fill="#E8707A" stroke="#1a1a1a" stroke-width="2"/>
+    <rect x="104" y="102" width="38" height="16" rx="6" fill="#E8707A" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- Vidrio superior -->
+    <path d="M38,22 Q80,22 122,22 L104,108 Q80,112 56,108 Z" fill="#F5EEC8"/>
+    <path d="M38,22 Q80,22 122,22 L104,108 Q80,112 56,108 Z" fill="#E8707A" clip-path="url(#tc)"/>
+    <path d="M38,22 Q80,22 122,22 L104,108 Q80,112 56,108 Z" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- Vidrio inferior -->
+    <path d="M56,112 Q80,108 104,112 L122,198 Q80,198 38,198 Z" fill="#F5EEC8"/>
+    <path d="M56,112 Q80,108 104,112 L122,198 Q80,198 38,198 Z" fill="#E8707A" clip-path="url(#bc)"/>
+    <path d="M56,112 Q80,108 104,112 L122,198 Q80,198 38,198 Z" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- Hilo de arena -->
+    <rect id="st" x="78" y="112" width="4" height="6" rx="2" fill="#E8707A" opacity="0"/>
+    <!-- Brillos -->
+    <ellipse cx="60" cy="50"  rx="6" ry="14" fill="rgba(255,255,255,0.28)" transform="rotate(-20,60,50)"/>
+    <ellipse cx="60" cy="160" rx="5" ry="10"  fill="rgba(255,255,255,0.2)"  transform="rotate(-20,60,160)"/>
+  </svg>
+</div>
+
+<div class="time-display" id="td">--:--</div>
+<div class="time-label"   id="tl">Elige los minutos</div>
+
+<div class="btn-group">
+  <button class="btn-time" onclick="selTime(1,this)">1 min</button>
+  <button class="btn-time" onclick="selTime(3,this)">3 min</button>
+  <button class="btn-time" onclick="selTime(5,this)">5 min</button>
+</div>
+<div class="controls">
+  <button class="btn-ctrl btn-start" id="bs" onclick="startStop()">▶ Iniciar</button>
+  <button class="btn-ctrl btn-reset" onclick="resetTimer()">↺ Reset</button>
+</div>
+
+<div class="finish-msg" id="fm"></div>
+<div class="sound-note"  id="sn"></div>
+
+<script>
+const frases = [
+  "SE ACABÓ. Tus hijos siguen en el columpio.\nTú sigues sin café caliente.",
+  "TIEMPO AGOTADO. El parque ha cerrado oficialmente.\n(Mentira, pero ellos no lo saben)",
+  "ALARMA DE MAMÁ. Hora de negociar\ncomo en una cumbre de la ONU.",
+  "FIN DEL DESMADRE EXTERIOR.\nAhora el desmadre es en casa.",
+  "MISIÓN COMPLETADA. Has sobrevivido\nsin perder la cordura... casi."
+];
+
+let sel=0, rem=0, tot=0, run=false, iv=null, fi=0;
+let aCtx=null, aN=[];
+
+const TR=document.getElementById('tr');
+const BR=document.getElementById('br');
+const ST=document.getElementById('st');
+const HG=document.getElementById('hglass');
+
+function gCtx() {
+  if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (aCtx.state === 'suspended') aCtx.resume();
+  return aCtx;
+}
+function beep(f,t,d,tp,v) {
+  const c=gCtx(), o=c.createOscillator(), g=c.createGain();
+  o.type=tp; o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(v,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+d);
+  o.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t+d); return o;
+}
+function playAlarm() {
+  const c=gCtx(), n=c.currentTime;
+  const s=[
+    [523,0,.12,'square',.35],[659,.13,.12,'square',.35],
+    [784,.26,.12,'square',.35],[1047,.39,.2,'square',.3],
+    [523,.62,.08,'sine',.4],[494,.72,.08,'sine',.4],
+    [523,.82,.08,'sine',.4],[494,.92,.08,'sine',.4],
+    [523,1.02,.08,'sine',.4],[392,1.22,.1,'sawtooth',.3],
+    [440,1.34,.1,'sawtooth',.3],[494,1.46,.1,'sawtooth',.3],
+    [523,1.58,.28,'sine',.5],[784,1.9,.07,'square',.3],
+    [698,1.98,.07,'square',.3],[784,2.06,.07,'square',.3],
+    [698,2.14,.07,'square',.3],[784,2.22,.07,'square',.3],
+    [1047,2.32,.4,'sine',.45]
+  ];
+  aN = s.map(([f,t,d,tp,v]) => beep(f, n+t, d, tp, v));
+  if (navigator.vibrate) navigator.vibrate([200,80,200,80,400,150,100,80,100,80,100,200,600]);
+}
+function stopAlarm() { aN.forEach(n=>{try{n.stop();}catch(e){}}); aN=[]; }
+
+function sand(p) {
+  const tH=Math.max(0,Math.round(80*p));
+  const bH=Math.max(0,Math.round(80*(1-p)));
+  TR.setAttribute('y', 18+(80-tH)); TR.setAttribute('height', tH);
+  BR.setAttribute('y',118+(80-bH)); BR.setAttribute('height', bH);
+  ST.setAttribute('opacity', p>0.01 ? '0.9' : '0');
+}
+function disp() {
+  const m=Math.floor(rem/60), s=rem%60;
+  document.getElementById('td').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function selTime(m, b) {
+  if (run) return;
+  stopAlarm();
+  sel=m*60; tot=sel; rem=sel;
+  document.querySelectorAll('.btn-time').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  disp(); sand(1);
+  document.getElementById('fm').classList.remove('show');
+  document.getElementById('sn').textContent='';
+  document.getElementById('tl').textContent='Listo para empezar';
+}
+function startStop() {
+  if (!sel) return;
+  gCtx();
+  if (run) {
+    clearInterval(iv); run=false;
+    document.getElementById('bs').textContent='▶ Continuar';
+    ST.setAttribute('opacity','0');
+  } else {
+    run=true;
+    document.getElementById('bs').textContent='⏸ Pausar';
+    document.getElementById('fm').classList.remove('show');
+    document.getElementById('sn').textContent='';
+    ST.setAttribute('opacity','0.9');
+    iv=setInterval(tick,1000);
+  }
+}
+function tick() {
+  if (rem<=0) { finish(); return; }
+  rem--;
+  disp(); sand(rem/tot);
+  if (rem<=10 && rem>0) {
+    const c=gCtx();
+    beep(rem%2===0?880:660, c.currentTime, .09, 'sine', .2);
+    document.getElementById('tl').textContent = '¡¡CASI!! '+rem+'s';
+  } else {
+    document.getElementById('tl').textContent = '¡Aguanta, que puedes!';
+  }
+}
+function finish() {
+  clearInterval(iv); run=false; rem=0;
+  ST.setAttribute('opacity','0');
+  disp(); sand(0);
+  document.getElementById('bs').textContent='▶ Iniciar';
+  document.getElementById('tl').textContent='¡TIEMPO!';
+  HG.classList.add('shake');
+  setTimeout(()=>HG.classList.remove('shake'), 700);
+  playAlarm();
+  const fm=document.getElementById('fm');
+  fm.textContent=frases[fi%frases.length]; fi++;
+  fm.classList.remove('show'); void fm.offsetWidth;
+  fm.classList.add('show');
+  document.getElementById('sn').textContent='🔊 Suena la alarma del parque';
+}
+function resetTimer() {
+  clearInterval(iv); stopAlarm(); run=false;
+  rem=sel; tot=sel;
+  document.getElementById('bs').textContent='▶ Iniciar';
+  document.getElementById('fm').classList.remove('show');
+  document.getElementById('sn').textContent='';
+  document.getElementById('tl').textContent = sel ? 'Listo para empezar' : 'Elige los minutos';
+  ST.setAttribute('opacity','0');
+  disp(); sand(1);
+}
+disp(); sand(1);
+</script>
+</body>
+</html>
